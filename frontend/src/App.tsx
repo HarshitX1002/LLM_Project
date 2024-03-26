@@ -8,7 +8,9 @@ export default function App() {
   const [result, setResult] = useState();
   const [question, setQuestion] = useState();
   const [file, setFile] = useState(null);
-  const [answer, setAnswer] = useState("");
+  const [outputValue, setOutputValue] = useState("");
+
+  const questionString = JSON.stringify(question);
 
   const handleQuestionChange = (event: any) => {
     setQuestion(event.target.value);
@@ -35,41 +37,17 @@ export default function App() {
 
   const handleFormSubmit = async (event: any) => {
     event.preventDefault();
+    const response = await fetch("http://127.0.0.1:8000/predict", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ input: question }),
+    });
 
-    if (!file) {
-      console.error("No file selected");
-      return;
-    }
-    const formData = new FormData();
-    formData.append("file", file);
-
-    if (question) {
-      formData.append("question", question);
-    }
-
-    // fetch("http://127.0.0.1:8000/predict", {
-    //   method: "POST",
-    //   body: formData,
-    // })
-    //   .then((response) => response.json())
-    //   .then((data) => {
-    //     setResult(data.result);
-    //   })
-    //   .catch((error) => {
-    //     console.error("Error", error);
-    //   });
+    const data = await response.json();
+    setOutputValue(data.result);
   };
-  const fetchAnswer = async () => {
-    try {
-      const response = await axios.post("http://localhost:8000/predict", {
-        // Include any necessary data for generating the answer
-      });
-      setAnswer(response.data.answer); // Assuming the response contains the generated answer
-    } catch (error) {
-      console.error("Error fetching answer:", error);
-    }
-  };
-
   return (
     <>
       <Navbar />
@@ -80,32 +58,31 @@ export default function App() {
           data-bs-root-margin="0px 0px -40%"
           data-bs-smooth-scroll="true"
         >
-          <form className="form">
+          <form onSubmit={handleFormSubmit}>
             <div className="my-2">
               <label
                 className="p-3 text-primary-emphasis bg-primary-subtle border border-primary-subtle rounded-3 my-3"
                 htmlFor="question"
               >
                 Question :
+                <input
+                  className="p-3 text-primary-emphasis bg-primary-subtle border border-primary-subtle rounded-3 mx-2 questionInput"
+                  id="question"
+                  type="text"
+                  value={question}
+                  onChange={handleQuestionChange}
+                  placeholder="Ask your question here"
+                />
+                <button
+                  className="btn btn-primary submitBtn rounded-3 btn-lg "
+                  style={{ padding: "14px" }}
+                  id="submit"
+                  type="submit"
+                  //disabled={!file || !question}
+                >
+                  Submit
+                </button>
               </label>
-              <input
-                className="p-3 text-primary-emphasis bg-primary-subtle border border-primary-subtle rounded-3 mx-2 questionInput"
-                id="question"
-                type="text"
-                value={question}
-                onChange={handleQuestionChange}
-                placeholder="Ask your question here"
-              />
-              <button
-                className="btn btn-primary submitBtn rounded-3 btn-lg "
-                style={{ padding: "14px" }}
-                id="submit"
-                type="submit"
-                onClick={handleFormSubmit}
-                disabled={!file || !question}
-              >
-                Submit
-              </button>
             </div>
           </form>
           <div>
@@ -115,6 +92,7 @@ export default function App() {
             >
               Upload CSV, TXT, PDF or DOCX file:
             </label>
+            <br></br>
             <input
               type="file"
               id="file"
@@ -129,7 +107,6 @@ export default function App() {
               id="upload"
               onClick={handleFormSubmit1}
               style={{ padding: "15px" }}
-              //alert={("File uploaded successfully!")}
             >
               Upload
             </button>
@@ -139,15 +116,16 @@ export default function App() {
               <h4>Result</h4>
             </label>
             <br />
-            <textarea
-               className="resultOutput bg-secondary"
-               id="textArea"
-              value={result}
-              cols={150}
-              rows={100}
-            >
-              Result:
-            </textarea>
+            <label>
+              <textarea
+                className="resultOutput bg-secondary rounded-3"
+                id="textArea"
+                readOnly
+                value={outputValue}
+                cols={50}
+                rows={20}
+              ></textarea>
+            </label>
           </div>
         </div>
       </div>
